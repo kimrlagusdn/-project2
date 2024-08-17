@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오목 게임</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(15, 40px);
+            grid-template-rows: repeat(15, 40px);
+            gap: 1px;
+            margin-bottom: 20px;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: #ffe4b5;
+            border: 1px solid #8b4513;
+            box-sizing: border-box;
+            position: relative;
+        }
+        .cell:hover {
+            background-color: #ffdead;
+            cursor: pointer;
+        }
+        .black-stone, .white-stone {
+            width: 90%;
+            height: 90%;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .black-stone {
+            background-color: #000;
+        }
+        .white-stone {
+            background-color: #fff;
+            border: 1px solid #000;
+        }
+        #info {
+            margin-top: 10px;
+            font-size: 18px;
+        }
+        #info.win {
+            font-size: 30px;
+            font-weight: bold;
+            color: red;
+            animation: flash 1s infinite;
+        }
+        @keyframes flash {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        #restart-button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #restart-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>천하제일오목대회</h1>
+    <div id="game-board"></div>
+    <div id="info">오목을 시작하세요! 첫 번째 플레이어는 흑돌입니다.</div>
+    <button id="restart-button" onclick="restartGame()">게임 재시작</button>
+
+    <script>
+        const boardSize = 15;
+        const gameBoard = document.getElementById('game-board');
+        let currentPlayer = 'black';
+        let board = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
+        let gameOver = false;
+
+        // 바둑판 생성
+        for (let i = 0; i < boardSize * boardSize; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.id = 'cell-' + i;
+            cell.addEventListener('click', () => placeStone(cell, i));
+            gameBoard.appendChild(cell);
+        }
+
+        // 바둑알 놓기
+        function placeStone(cell, index) {
+            if (gameOver) return;
+            
+            const row = Math.floor(index / boardSize);
+            const col = index % boardSize;
+
+            if (board[row][col] !== null) return; // 이미 돌이 놓인 자리라면 무시
+
+            const stone = document.createElement('div');
+            stone.className = currentPlayer === 'black' ? 'black-stone' : 'white-stone';
+            cell.appendChild(stone);
+
+            board[row][col] = currentPlayer;
+
+            if (checkWin(row, col)) {
+                gameOver = true;
+                const infoElement = document.getElementById('info');
+                infoElement.textContent = `${currentPlayer === 'black' ? '흑' : '백'} 승리!`;
+                infoElement.classList.add('win');
+            } else {
+                currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                document.getElementById('info').textContent = `다음 플레이어: ${currentPlayer === 'black' ? '흑' : '백'}`;
+            }
+        }
+
+        // 승리 체크
+        function checkWin(row, col) {
+            const directions = [
+                { x: 1, y: 0 },  // 가로
+                { x: 0, y: 1 },  // 세로
+                { x: 1, y: 1 },  // 대각선 \
+                { x: 1, y: -1 }  // 대각선 /
+            ];
+
+            for (let {x, y} of directions) {
+                let count = 1;
+
+                count += countStones(row, col, x, y);
+                count += countStones(row, col, -x, -y);
+
+                if (count >= 5) return true;
+            }
+
+            return false;
+        }
+
+        // 돌 개수 세기
+        function countStones(row, col, dx, dy) {
+            let count = 0;
+            let currentRow = row + dy;
+            let currentCol = col + dx;
+
+            while (
+                currentRow >= 0 &&
+                currentRow < boardSize &&
+                currentCol >= 0 &&
+                currentCol < boardSize &&
+                board[currentRow][currentCol] === currentPlayer
+            ) {
+                count++;
+                currentRow += dy;
+                currentCol += dx;
+            }
+
+            return count;
+        }
+
+        // 게임 재시작
+        function restartGame() {
+            board = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
+            currentPlayer = 'black';
+            gameOver = false;
+            const infoElement = document.getElementById('info');
+            infoElement.textContent = '오목을 시작하세요! 첫 번째 플레이어는 흑돌입니다.';
+            infoElement.classList.remove('win');
+            document.querySelectorAll('.cell').forEach(cell => cell.innerHTML = '');
+        }
+    </script>
+</body>
+</html>
